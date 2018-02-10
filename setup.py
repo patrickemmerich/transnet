@@ -8,7 +8,6 @@ setup(
     install_requires=[
         'requests',
         'matplotlib',
-        'seaborn',
         'pandas'
     ],
     entry_points={
