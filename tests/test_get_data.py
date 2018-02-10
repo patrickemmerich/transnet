@@ -1,4 +1,9 @@
-from transnet.get_data import save_csv
+from transnet.get_data import get_df_for_type
+
 
 def test():
-    save_csv()
+    get_df_for_type()
+
+
+if __name__ == '__main__':
+    test()

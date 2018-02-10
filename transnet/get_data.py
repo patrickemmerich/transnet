@@ -1,8 +1,10 @@
+import glob
 import logging
+import os
 from datetime import date
 from enum import Enum
-from os import path, makedirs
 
+import pandas as pd
 import requests
 from dateutil.rrule import rrule, MONTHLY
 
@@ -21,14 +23,18 @@ class Types(Enum):
     WIND_INFEED = 'wind'
 
 
+def _get_path_for_type(type):
+    return get_data_path(str.lower(type.name))
+
+
 def save_csv():
     for type in Types:
-        save_csv_for_type(type)
+        _save_csv_for_type(type)
 
 
-def save_csv_for_type(type):
-    path_for_type = get_data_path(str.lower(type.name))
-    makedirs(path_for_type, exist_ok=True)
+def _save_csv_for_type(type):
+    path_for_type = _get_path_for_type(type)
+    os.makedirs(path_for_type, exist_ok=True)
 
     months = [day.strftime('%Y-%m') for day in rrule(MONTHLY, dtstart=date(2011, 1, 1), until=date.today())]
     for month in months:
@@ -39,6 +45,28 @@ def save_csv_for_type(type):
         r.raise_for_status()
 
         file_name = '{}.csv'.format(month)
-        file_path = path.join(path_for_type, file_name)
+        file_path = os.path.join(path_for_type, file_name)
         with open(file_path, 'wb') as f:
             f.write(r.content)
+
+
+def get_df_for_type(type=Types.LOAD):
+    path = _get_path_for_type(type)
+    filenames = glob.glob(os.path.join(path, "*.csv"))
+    filenames.sort()
+
+    # read and concatenate df's
+    df_from_each_file = (pd.read_csv(f, delimiter=';') for f in filenames)
+    df = pd.concat(df_from_each_file, ignore_index=True)
+
+    df = preprocess_df(df)
+    return df
+
+
+def preprocess_df(df):
+    # parse datetime and set as index
+    df['temporary'] = df[['Date from', 'Time from']].apply(lambda x: '{} {}'.format(x[0], x[1]), axis=1)
+    df['date'] = pd.to_datetime(df['temporary'], format='%d.%m.%Y %H:%M', errors='ignore')
+    df = df.set_index(pd.DatetimeIndex(df['date']))
+    df = df[['Actual value (MW)']]
+    return df

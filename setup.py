@@ -7,11 +7,14 @@ setup(
 
     install_requires=[
         'requests',
-        'matplotlib'
+        'matplotlib',
+        'seaborn',
+        'pandas'
     ],
     entry_points={
         'console_scripts': [
-            'save_csv = transnet.get_data:save_csv',
+            'get_load_data = transnet.get_data:save_csv',
+            'plot_data = transnet.plot:plot_data',
         ]
     },
 
