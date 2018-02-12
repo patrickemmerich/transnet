@@ -14,5 +14,5 @@ def plot_data():
     logger.info(df.info())
     logger.info(df.head())
 
-    df.plot()
+    df.plot(figsize=(15, 10), subplots=False)
     plt.savefig('tsplot.png')

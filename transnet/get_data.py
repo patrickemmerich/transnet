@@ -7,6 +7,7 @@ from enum import Enum
 import pandas as pd
 import requests
 from dateutil.rrule import rrule, MONTHLY
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 from transnet import get_data_path
 
@@ -68,5 +69,32 @@ def preprocess_df(df):
     df['temporary'] = df[['Date from', 'Time from']].apply(lambda x: '{} {}'.format(x[0], x[1]), axis=1)
     df['date'] = pd.to_datetime(df['temporary'], format='%d.%m.%Y %H:%M', errors='ignore')
     df = df.set_index(pd.DatetimeIndex(df['date']))
-    df = df[['Actual value (MW)']]
+
+    actual_value_mw = 'Actual value (MW)'
+    projection_mw = 'Projection (MW)'
+    # remove rows with missing values (e.g. for Zeitumstellung on 26.10.2014)
+    missing_values = df[actual_value_mw].isnull()
+    df = df[-missing_values]
+    # replace missing actual values by projections (occurs at 2013-05-08)
+    zero_values = df[actual_value_mw] == 0
+    df.loc[zero_values, actual_value_mw] = df.loc[zero_values, projection_mw]
+    # restrict
+    df = df[[actual_value_mw]]
+
+    # subtract one-year rolling average
+    # df['one_year_rolling_avg'] = pd.rolling_mean(df, window = 365 * 24 * 4)
+    # df = df['2013-01-01':]
+    # df[actual_value_mw] = df[actual_value_mw] - df['one_year_rolling_avg']
+
+    # decompose
+    df = _seasonal_decompose(df, freq=7 * 24 * 4)
+
+    return df
+
+
+def _seasonal_decompose(df, freq):
+    decomposition = seasonal_decompose(df, model='additive', freq=freq, two_sided=False)
+    df['seasonal'] = decomposition.seasonal
+    df['trend'] = decomposition.trend
+    df['resid'] = decomposition.resid
     return df

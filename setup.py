@@ -8,7 +8,8 @@ setup(
     install_requires=[
         'requests',
         'matplotlib',
-        'pandas'
+        'pandas',
+        'statsmodels'
     ],
     entry_points={
         'console_scripts': [
