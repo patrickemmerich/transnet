@@ -1,10 +1,10 @@
 import pandas as pd
 from statsmodels.tsa.seasonal import seasonal_decompose
 
+from transnet.get_data_from_api import actual_value_mw, projection_mw
 from transnet.get_feiertage_from_api import get_holidays
 
-actual_value_mw = 'Actual value (MW)'
-projection_mw = 'Projection (MW)'
+actual_value_seasonal_daily_corr = 'Actual value (MW), seasonal daily corr'
 
 
 def preprocess_df(df):
@@ -12,17 +12,12 @@ def preprocess_df(df):
     df = _impute_missing_values(df)
     df = df[[actual_value_mw]]
 
+    # TODO: Apply holiday correction
+
     # decompose T = day
-    ## df_decomp_daily = _seasonal_decompose(df, freq=24 * 4)
-    ## df[actual_value_mw] = df[actual_value_mw] - df_decomp_daily['trend']
-
-    # decompose T = week
-    # df_decomp_weekly = _seasonal_decompose(df, freq=7 * 24 * 4)
-
-    ## df['daily_trend'] = df_decomp_daily['trend']
-    # df['weekly_trend'] = df_decomp_weekly['trend']
-    # df['weekly_seasonal'] = df_decomp_weekly['seasonal']
-    # df['weekly_resid'] = df_decomp_weekly['resid']
+    df_decomp_daily = _seasonal_decompose(df, freq=24 * 4)
+    df['seasonal_daily'] = df_decomp_daily['seasonal']
+    df[actual_value_seasonal_daily_corr] = df[actual_value_mw] - df['seasonal_daily']
 
     df = _add_weekday(df, colname='weekday')
     df = _add_holidays(df, colnames=['weekday', 'description'])
