@@ -21,10 +21,10 @@ def plot_data():
     logger.info(df.head())
 
     plt.figure()
-    df[[actual_value_mw, 'weekday']].plot(figsize=(15, 10), subplots=False)
+    df[[actual_value_mw, 'weekday']].plot(figsize=(13, 8), subplots=False)
     plt.savefig('plot_ts.png')
 
-    plt.figure()
+    plt.figure(figsize=(13, 8))
     lag_acf = get_acf(df[[actual_value_mw]])
     plt.plot(lag_acf)
     plt.savefig('plot_acf.png')
