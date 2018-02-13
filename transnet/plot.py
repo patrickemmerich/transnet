@@ -26,5 +26,7 @@ def plot_data():
 
     plt.figure(figsize=(13, 8))
     lag_acf = get_acf(df[[actual_value_seasonal_daily_corr]])
+    plt.axvline(x=1 * 24 * 4, linestyle='--', color='gray')
+    plt.axvline(x=7 * 24 * 4, linestyle='--', color='gray')
     plt.plot(lag_acf)
     plt.savefig('plot_acf.png')
