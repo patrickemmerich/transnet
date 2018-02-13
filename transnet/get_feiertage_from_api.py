@@ -48,8 +48,8 @@ def save_csv():
             csv_out.writerow(row)
 
 
-def get_feiertage():
+def get_holidays(colname):
     df = pd.read_csv(file_path, delimiter=',', parse_dates=['date'])
     df = df.set_index(pd.DatetimeIndex(df['date']))
-    df.rename(columns={'name': 'holiday_name'}, inplace=True)
-    return df[['holiday_name']]
+    df.rename(columns={'name': colname}, inplace=True)
+    return df[[colname]]
