@@ -10,12 +10,16 @@ from dateutil.rrule import rrule, MONTHLY
 from statsmodels.tsa.seasonal import seasonal_decompose
 
 from transnet import get_data_path
+from transnet.get_feiertage import get_feiertage
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # see https://www.transnetbw.com/en/transparency/market-data/key-figures
 api = 'https://api.transnetbw.de'
+
+actual_value_mw = 'Actual value (MW)'
+projection_mw = 'Projection (MW)'
 
 
 class Types(Enum):
@@ -70,8 +74,6 @@ def preprocess_df(df):
     df['date'] = pd.to_datetime(df['temporary'], format='%d.%m.%Y %H:%M', errors='ignore')
     df = df.set_index(pd.DatetimeIndex(df['date']))
 
-    actual_value_mw = 'Actual value (MW)'
-    projection_mw = 'Projection (MW)'
     # remove rows with missing values (e.g. for Zeitumstellung on 26.10.2014)
     missing_values = df[actual_value_mw].isnull()
     df = df[-missing_values]
@@ -81,20 +83,64 @@ def preprocess_df(df):
     # restrict
     df = df[[actual_value_mw]]
 
-    # subtract one-year rolling average
-    # df['one_year_rolling_avg'] = pd.rolling_mean(df, window = 365 * 24 * 4)
+    # subtract 7day rolling average
+    # rolling_mean = pd.rolling_mean(df, window=30 * 24 * 4)
+    # expweighted_avg = pd.ewma(df, halflife=7 * 24 * 4)
+    # df['rolling_mean'] = rolling_mean
+    # df['expweighted_avg'] = expweighted_avg
     # df = df['2013-01-01':]
     # df[actual_value_mw] = df[actual_value_mw] - df['one_year_rolling_avg']
 
-    # decompose
-    df = _seasonal_decompose(df, freq=7 * 24 * 4)
+    df = _groupby_date(df)
 
+    df = _add_weekday(df)
+    df = _add_holidays(df)
+
+    # decompose T = day
+    ##df_decomp_daily = _seasonal_decompose(df, freq=24 * 4)
+    ##df[actual_value_mw] = df[actual_value_mw] - df_decomp_daily['trend']
+
+    # decompose T = week
+    # df_decomp_weekly = _seasonal_decompose(df, freq=7 * 24 * 4)
+
+    ##df['daily_trend'] = df_decomp_daily['trend']
+    # df['weekly_trend'] = df_decomp_weekly['trend']
+    # df['weekly_seasonal'] = df_decomp_weekly['seasonal']
+    # df['weekly_resid'] = df_decomp_weekly['resid']
+
+    # df = df.loc['2017-05-01':'2017-05-31', ['resid']]
+
+    # df.loc['2017-05-01':'2017-05-01', 'resid'] += 2000
+
+    return df  # df[[actual_value_mw, 'rolling_mean']]
+
+
+def _add_weekday(df):
+    # from 0=monday to 6=sunday
+    df['weekday'] = df.index.weekday * 1000
+    return df
+
+
+def _add_holidays(df):
+    # holiday=-1
+    holidays = get_feiertage()
+    df['holiday_name'] = holidays
+    is_holiday = ~df['holiday_name'].isnull()
+    df.loc[is_holiday, 'weekday'] = -1 * 1000
     return df
 
 
 def _seasonal_decompose(df, freq):
     decomposition = seasonal_decompose(df, model='additive', freq=freq, two_sided=False)
-    df['seasonal'] = decomposition.seasonal
-    df['trend'] = decomposition.trend
-    df['resid'] = decomposition.resid
+    df2 = pd.DataFrame(index=df.index)
+    df2['seasonal'] = decomposition.seasonal
+    df2['trend'] = decomposition.trend
+    df2['resid'] = decomposition.resid
+    return df2
+
+
+def _groupby_date(df):
+    series = df.groupby(by=lambda x: x.date())[actual_value_mw].mean()
+    df = pd.DataFrame(series)
+    df = df.set_index(df.index.to_datetime())
     return df

@@ -14,6 +14,7 @@ setup(
     entry_points={
         'console_scripts': [
             'get_load_data = transnet.get_data:save_csv',
+            'get_feiertage = transnet.get_feiertage:save_csv',
             'plot_data = transnet.plot:plot_data',
         ]
     },

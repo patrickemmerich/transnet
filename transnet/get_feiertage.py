@@ -1,22 +1,24 @@
+import csv
+import json
 import logging
 import os
 
-import json
-
-import csv
-
+import pandas as pd
 import requests
+
 from transnet import get_data_path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# see https://www.transnetbw.com/en/transparency/market-data/key-figures
 api = 'https://feiertage-api.de/api'
+
+path_for_type = get_data_path('feiertage')
+file_name = 'feiertage.csv'
+file_path = os.path.join(path_for_type, file_name)
 
 
 def save_csv():
-    path_for_type = get_data_path('feiertage')
     os.makedirs(path_for_type, exist_ok=True)
 
     feiertage_dict = {}
@@ -34,13 +36,19 @@ def save_csv():
     feiertage_list = []
     for year in feiertage_dict.keys():
         for feiertag in iter(feiertage_dict[year].keys()):
-            datum = feiertage_dict[year][feiertag]['datum']
-            feiertage_list.append((datum, feiertag))
+            # Gründonnerstag ist kein Feiertag
+            if feiertag != 'Gründonnerstag':
+                datum = feiertage_dict[year][feiertag]['datum']
+                feiertage_list.append((datum, feiertag))
 
-    file_name = 'feiertage.csv'.format(year)
-    file_path = os.path.join(path_for_type, file_name)
     with open(file_path, 'w') as f:
-        csv_out=csv.writer(f)
+        csv_out = csv.writer(f)
         csv_out.writerow(['date', 'name'])
         for row in feiertage_list:
             csv_out.writerow(row)
+
+
+def get_feiertage():
+    df = pd.read_csv(file_path, delimiter=',', parse_dates=['date'])
+    df = df.set_index(pd.DatetimeIndex(df['date']))
+    return df['name']

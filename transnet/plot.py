@@ -15,4 +15,9 @@ def plot_data():
     logger.info(df.head())
 
     df.plot(figsize=(15, 10), subplots=False)
+
+    # from transnet.get_correlation import get_pacf
+    # lag_acf = get_pacf(df)
+    # plt.plot(lag_acf)
+
     plt.savefig('tsplot.png')
