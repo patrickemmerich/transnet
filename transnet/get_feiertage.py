@@ -51,4 +51,5 @@ def save_csv():
 def get_feiertage():
     df = pd.read_csv(file_path, delimiter=',', parse_dates=['date'])
     df = df.set_index(pd.DatetimeIndex(df['date']))
-    return df['name']
+    df.rename(columns={'name': 'holiday_name'}, inplace=True)
+    return df[['holiday_name']]

@@ -91,7 +91,7 @@ def preprocess_df(df):
     # df = df['2013-01-01':]
     # df[actual_value_mw] = df[actual_value_mw] - df['one_year_rolling_avg']
 
-    df = _groupby_date(df)
+    # df = _groupby_date(df)
 
     df = _add_weekday(df)
     df = _add_holidays(df)
@@ -122,11 +122,18 @@ def _add_weekday(df):
 
 
 def _add_holidays(df):
-    # holiday=-1
-    holidays = get_feiertage()
-    df['holiday_name'] = holidays
+    # 7=holiday
+    df_holidays = get_feiertage()
+
+    # join, note hack to preserve index when joining
+    df['date'] = df.index.date
+    df_holidays['date'] = df_holidays.index.date
+    df = df.merge(df_holidays, on=['date'], how='left').set_index(df.index)
+    df = df.drop('date', 1)
+
+    # overwrite weekday
     is_holiday = ~df['holiday_name'].isnull()
-    df.loc[is_holiday, 'weekday'] = -1 * 1000
+    df.loc[is_holiday, 'weekday'] = 7 * 1000
     return df
 
 
