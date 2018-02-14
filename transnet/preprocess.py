@@ -14,10 +14,10 @@ def preprocess_df(df):
 
     # TODO: Apply holiday correction
 
-    # decompose T = day
-    df_decomp_daily = _seasonal_decompose(df, freq=24 * 4)
-    df['seasonal_daily'] = df_decomp_daily['seasonal']
-    df[actual_value_seasonal_daily_corr] = df[actual_value_mw] - df['seasonal_daily']
+    df_decomp_weekly = _seasonal_decompose(df, freq=7 * 24 * 4)
+    df['seasonal'] = df_decomp_weekly['seasonal']
+    df['trend'] = df_decomp_weekly['trend']
+    df['residuals'] = df_decomp_weekly['resid']
 
     df = _add_weekday(df, colname='weekday')
     df = _add_holidays(df, colnames=['weekday', 'description'])
