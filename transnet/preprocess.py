@@ -4,18 +4,16 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 from transnet.get_data_from_api import actual_value_mw, projection_mw
 from transnet.get_feiertage_from_api import get_holidays
 
-actual_value_seasonal_daily_corr = 'Actual value (MW), seasonal daily corr'
-
 
 def preprocess_df(df, date_from, date_upto):
     df = _add_datetime_index(df)
     df = _impute_missing_values(df)
-    df = df[[actual_value_mw]]
+    df = df[[actual_value_mw, projection_mw]]
     df = df[date_from:date_upto]
 
     # TODO: Apply holiday correction
 
-    df_decomp_weekly = _seasonal_decompose(df, freq=7 * 24 * 4)
+    df_decomp_weekly = _seasonal_decompose(df[[actual_value_mw]], freq=7 * 24 * 4)
     df['seasonal'] = df_decomp_weekly['seasonal']
     df['trend'] = df_decomp_weekly['trend']
     df['residuals'] = df_decomp_weekly['resid']
