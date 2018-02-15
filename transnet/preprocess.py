@@ -7,10 +7,11 @@ from transnet.get_feiertage_from_api import get_holidays
 actual_value_seasonal_daily_corr = 'Actual value (MW), seasonal daily corr'
 
 
-def preprocess_df(df):
+def preprocess_df(df, date_from, date_upto):
     df = _add_datetime_index(df)
     df = _impute_missing_values(df)
     df = df[[actual_value_mw]]
+    df = df[date_from:date_upto]
 
     # TODO: Apply holiday correction
 

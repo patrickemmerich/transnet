@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 # see https://www.transnetbw.com/en/transparency/market-data/key-figures
 api = 'https://api.transnetbw.de'
+# actual_value is available until t - 30min
+# predicted_value is available for t + 24h
 
 actual_value_mw = 'Actual value (MW)'
 projection_mw = 'Projection (MW)'

@@ -10,14 +10,23 @@ import logging
 from transnet.model import get_forecast
 from transnet.stat_tests import test_stationarity
 
+from datetime import datetime, timedelta
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+# TODO alternative Facebook Prophet
+# https://research.fb.com/prophet-forecasting-at-scale/
+# http://machinelearningstories.blogspot.de/2017/05/facebooks-phophet-model-for-forecasting.html
+
 def plot_data():
+    date_from = datetime(2017, 7, 1, 0, 0, 0)
+    date_upto = datetime(2017, 7, 28, 23, 45, 0)
+    horizon = timedelta(hours=24)
+
     df = get_df_for_type()
-    df = preprocess_df(df)
-    df = df['2011-08-08':'2011-08-18']
+    df = preprocess_df(df, date_from=date_from, date_upto=date_upto)
 
     logger.info(df.info())
     logger.info(df.head())
@@ -43,13 +52,15 @@ def plot_data():
     plt.savefig('plot_pacf.png')
 
     series_ = df.loc[~df['residuals'].isnull(), 'residuals']
-    train, test = series_.loc['2011-08-08':'2011-08-17'], series_.loc['2011-08-18']
+    series_starts = series_.index[0]
+    train = series_.loc[series_starts: date_upto - horizon]
+    holdout = series_.loc[date_upto - 2 * horizon: date_upto]
     test_stationarity(train)
 
     prediction = get_forecast(train, p=2, d=0, q=0, horizon=24 * 4)
 
     plt.figure(figsize=(13, 8))
     plt.title('Evaluation')
-    plt.plot(series_.loc['2011-08-17':'2011-08-18'], color='blue')
+    plt.plot(holdout, color='blue')
     plt.plot(prediction, color='red')
     plt.savefig('plot_evaluation.png')
