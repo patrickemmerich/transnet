@@ -9,6 +9,7 @@ setup(
         'requests',
         'matplotlib',
         'pandas',
+        'sklearn',
         'statsmodels'
     ],
     entry_points={

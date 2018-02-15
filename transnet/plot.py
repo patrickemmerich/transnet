@@ -1,4 +1,5 @@
 import matplotlib
+import pandas as pd
 
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -22,8 +23,9 @@ logger = logging.getLogger(__name__)
 
 def plot_data():
     date_from = datetime(2017, 7, 1, 0, 0, 0)
-    date_upto = datetime(2017, 7, 28, 23, 45, 0)
+    date_upto = datetime(2017, 7, 27, 23, 45, 0)
     horizon = timedelta(hours=24)
+    horizon_quantiles = int(horizon / timedelta(minutes=15))
 
     df = get_df_for_type()
     df = preprocess_df(df, date_from=date_from, date_upto=date_upto)
@@ -55,12 +57,22 @@ def plot_data():
     series_starts = timeseries.index[0]
     train = timeseries.loc[series_starts: date_upto - horizon]
     holdout = timeseries.loc[date_upto - 2 * horizon: date_upto]
+    original = df.loc[date_upto - horizon + timedelta(minutes=15): date_upto, actual_value_mw]
     test_stationarity(train)
 
-    prediction = get_forecast(train, p=2, d=0, q=0, horizon=24 * 4)
+    prediction = get_forecast(train, p=2, d=0, q=0, horizon=horizon_quantiles)
+    seasonal_from = date_upto - timedelta(hours=7 * 24)
+    seasonal = df.loc[seasonal_from + timedelta(minutes=15): seasonal_from + horizon, 'seasonal']
+    seasonal.index = prediction.index
+    # replace by EMOV
+    trend = pd.Series(data=(df.loc[(train.index[-1]), 'trend']), index=prediction.index)
 
     plt.figure(figsize=(13, 8))
     plt.title('Evaluation')
-    plt.plot(holdout, color='blue')
-    plt.plot(prediction, color='red')
+    plt.plot(original, color='blue')
+    plt.plot(trend + seasonal + prediction, color='red')
     plt.savefig('plot_evaluation.png')
+
+    from sklearn.metrics import mean_absolute_error
+    logger.info('MAE original - forecast {}'.format(mean_absolute_error(original, trend + seasonal + prediction)))
+    logger.info('MAE original - seasonal {}'.format(mean_absolute_error(original, trend + seasonal)))
