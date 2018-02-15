@@ -6,6 +6,8 @@ from transnet.get_feiertage_from_api import get_holidays
 
 
 def preprocess_df(df, date_from, date_upto):
+    """Return dataframe with DateTimeIndex and columns 'Actual value (MW), 'Projection (MW)', 'seasonal', 'trend',
+    'residuals', 'weekday', 'holiday'. Seasonal decomposition is weekly."""
     df = _add_datetime_index(df)
     df = _impute_missing_values(df)
     df = df[[actual_value_mw, projection_mw]]
@@ -19,7 +21,7 @@ def preprocess_df(df, date_from, date_upto):
     df['residuals'] = df_decomp_weekly['resid']
 
     df = _add_weekday(df, colname='weekday')
-    df = _add_holidays(df, colnames=['weekday', 'description'])
+    df = _add_holidays(df, colname='holiday')
 
     return df
 
@@ -42,14 +44,14 @@ def _impute_missing_values(df):
 
 
 def _add_weekday(df, colname='weekday'):
-    # from 0=monday to 6=sunday
-    df[colname] = df.index.weekday * 1000
+    """Add column with an integer from 0=monday to 6=sunday."""
+    df[colname] = df.index.weekday
     return df
 
 
-def _add_holidays(df, colnames=['weekday', 'desciption']):
-    # 7=holiday
-    df_holidays = get_holidays(colname='description')
+def _add_holidays(df, colname='holiday'):
+    """Add column with the label of the holiday. Is empty for non-holidays"""
+    df_holidays = get_holidays(colname)
 
     # join, note hack to preserve index when joining
     df['date'] = df.index.date
@@ -57,9 +59,7 @@ def _add_holidays(df, colnames=['weekday', 'desciption']):
     df = df.merge(df_holidays, on=['date'], how='left').set_index(df.index)
     df = df.drop('date', 1)
 
-    # overwrite weekday
-    is_holiday = ~df['description'].isnull()
-    df.loc[is_holiday, 'weekday'] = 7 * 1000
+    is_holiday = ~df[colname].isnull()
     return df
 
 

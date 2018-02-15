@@ -13,10 +13,7 @@ from transnet import get_data_path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# see https://www.transnetbw.com/en/transparency/market-data/key-figures
 api = 'https://api.transnetbw.de'
-# actual_value is available until t - 30min
-# predicted_value is available for t + 24h
 
 actual_value_mw = 'Actual value (MW)'
 projection_mw = 'Projection (MW)'
@@ -33,6 +30,15 @@ def _get_path_for_type(type):
 
 
 def save_csv():
+    """Retrieve data from Transnet API https://api.transnetbw.de. Fetch available data for total load,
+    photovoltaics infeed, wind infeed (from 2011-01 until today). Resolution is 15 minutes. Data contains
+    'Actual value (MW)' (up to t-30min) and 'Projection (MW)' (up to t + 24h) values where t is time of
+    retrieval. Save data on monthly  basis as csv files.
+
+    See https://www.transnetbw.com/en/transparency/market-data/key-figures on available data on the API.
+
+    :return: None
+    """
     for type in Types:
         _save_csv_for_type(type)
 
@@ -56,6 +62,12 @@ def _save_csv_for_type(type):
 
 
 def get_df_for_type(type=Types.LOAD):
+    """Combine all available data (that has been retrieved from API before) for respective type, and return respective
+    dataframe. Columns are 'Date from', 'Time from', 'Date to', 'Time to', 'Projection (MW)', 'Actual Value (MW)'.
+
+    :param type:
+    :return: pd.Dataframe
+    """
     path = _get_path_for_type(type)
     filenames = glob.glob(os.path.join(path, "*.csv"))
     filenames.sort()

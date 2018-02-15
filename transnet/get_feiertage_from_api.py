@@ -18,11 +18,14 @@ file_name = 'feiertage.csv'
 file_path = os.path.join(path_for_type, file_name)
 
 
-def save_csv():
+def save_csv(years=range(2011, 2019)):
+    """Retrieve Baden-Wuerttemberg holidays from Feiertage API https://feiertage-api.de/api. Save data as a single
+    csv file, which contains date (YYYY-MM-DD) and name (e.g. Neujahrstag) of holidays.
+
+    :return: None"""
     os.makedirs(path_for_type, exist_ok=True)
 
     feiertage_dict = {}
-    years = range(2011, 2019)
     for year in years:
         logger.info('Retrieving Feiertage for BW for year {}'.format(year))
 
@@ -49,7 +52,14 @@ def save_csv():
 
 
 def get_holidays(colname):
+    """Read holiday data (that has been retrieved from API before) from csv, and return respective
+    dataframe, which has a pd.DateTimeIndex and a single column with label colname.
+
+    :param colname:
+    :return: pd.Dataframe
+    """
     df = pd.read_csv(file_path, delimiter=',', parse_dates=['date'])
     df = df.set_index(pd.DatetimeIndex(df['date']))
     df.rename(columns={'name': colname}, inplace=True)
-    return df[[colname]]
+    df = df[[colname]]
+    return df
