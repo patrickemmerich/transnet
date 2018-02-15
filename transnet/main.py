@@ -48,8 +48,7 @@ def predict():
     # predict
     prediction = get_forecast(timeseries, p=2, d=0, q=0, horizon=horizon_quantiles)
 
-    seasonal_from = date_upto - timedelta(hours=7 * 24)
-    seasonal = df_train_decomp.loc[seasonal_from + timedelta(minutes=15): seasonal_from + horizon, 'seasonal']
+    seasonal = df_train_decomp.loc[(prediction.index - timedelta(weeks=1)), 'seasonal']
     seasonal.index = prediction.index
     # TODO perhaps replace by EMOV
     trend = pd.Series(data=(df_train_decomp.loc[(train.index[-1]), 'trend']), index=prediction.index)
