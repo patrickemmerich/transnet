@@ -1,0 +1,66 @@
+import matplotlib
+import pandas as pd
+
+matplotlib.use('agg')
+
+from transnet.plots import plot_acf, plot_pacf, plot_ts, plot_evaluate
+from transnet.get_data_from_api import get_df_for_type
+from transnet.preprocess import preprocess_df, actual_value_mw, projection_mw
+import logging
+from transnet.model import get_forecast
+from transnet.stat_tests import test_stationarity
+from transnet.decompose import _seasonal_decompose
+
+from datetime import datetime, timedelta
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+# TODO alternative Facebook Prophet
+# https://research.fb.com/prophet-forecasting-at-scale/
+# http://machinelearningstories.blogspot.de/2017/05/facebooks-phophet-model-for-forecasting.html
+
+def predict():
+    date_from = datetime(2017, 7, 1, 0, 0, 0)
+    date_upto = datetime(2017, 7, 26, 23, 45, 0)
+    horizon = timedelta(hours=2 * 24)
+    horizon_quantiles = int(horizon / timedelta(minutes=15))
+
+    df = get_df_for_type()
+    df = preprocess_df(df, date_from=date_from, date_upto=date_upto)
+
+    train = df.loc[date_from: date_upto - horizon, actual_value_mw]
+    holdout = df.loc[date_upto - horizon + timedelta(minutes=15): date_upto, actual_value_mw]
+    prediction_transnet = df.loc[date_upto - horizon + timedelta(minutes=15): date_upto, projection_mw]
+
+    df_train_decomp = _seasonal_decompose(train, freq=7 * 24 * 4)
+
+    plot_ts(df_train_decomp)
+
+    # define (residuals) timeseries, which we will forecast
+    timeseries = df_train_decomp.loc[~df_train_decomp['residuals'].isnull(), 'residuals']
+
+    plot_acf(timeseries)
+    plot_pacf(timeseries)
+    test_stationarity(timeseries)
+
+    # predict
+    prediction = get_forecast(timeseries, p=2, d=0, q=0, horizon=horizon_quantiles)
+
+    seasonal_from = date_upto - timedelta(hours=7 * 24)
+    seasonal = df_train_decomp.loc[seasonal_from + timedelta(minutes=15): seasonal_from + horizon, 'seasonal']
+    seasonal.index = prediction.index
+    # TODO perhaps replace by EMOV
+    trend = pd.Series(data=(df_train_decomp.loc[(train.index[-1]), 'trend']), index=prediction.index)
+
+    plot_evaluate(
+        {'blue': holdout,
+         'red': trend + seasonal + prediction,
+         'green': prediction_transnet}
+    )
+
+    from sklearn.metrics import mean_absolute_error
+    logger.info('MAE holdout - forecast {}'.format(mean_absolute_error(holdout, trend + seasonal + prediction)))
+    logger.info('MAE holdout - seasonal {}'.format(mean_absolute_error(holdout, trend + seasonal)))
+    logger.info('MAE holdout - forecast transnet {}'.format(mean_absolute_error(holdout, prediction_transnet)))

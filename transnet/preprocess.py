@@ -1,24 +1,15 @@
 import pandas as pd
-from statsmodels.tsa.seasonal import seasonal_decompose
 
 from transnet.get_data_from_api import actual_value_mw, projection_mw
 from transnet.get_feiertage_from_api import get_holidays
 
 
 def preprocess_df(df, date_from, date_upto):
-    """Return dataframe with DateTimeIndex and columns 'Actual value (MW), 'Projection (MW)', 'seasonal', 'trend',
-    'residuals', 'weekday', 'holiday'. Seasonal decomposition is weekly."""
+    """Return dataframe with DateTimeIndex and columns 'Actual value (MW), 'Projection (MW)', 'weekday', 'holiday'."""
     df = _add_datetime_index(df)
     df = _impute_missing_values(df)
     df = df[[actual_value_mw, projection_mw]]
     df = df[date_from:date_upto]
-
-    # TODO: Apply holiday correction
-
-    df_decomp_weekly = _seasonal_decompose(df[[actual_value_mw]], freq=7 * 24 * 4)
-    df['seasonal'] = df_decomp_weekly['seasonal']
-    df['trend'] = df_decomp_weekly['trend']
-    df['residuals'] = df_decomp_weekly['resid']
 
     df = _add_weekday(df, colname='weekday')
     df = _add_holidays(df, colname='holiday')
@@ -61,15 +52,6 @@ def _add_holidays(df, colname='holiday'):
 
     is_holiday = ~df[colname].isnull()
     return df
-
-
-def _seasonal_decompose(df, freq):
-    decomposition = seasonal_decompose(df, model='additive', freq=freq, two_sided=False)
-    df2 = pd.DataFrame(index=df.index)
-    df2['seasonal'] = decomposition.seasonal
-    df2['trend'] = decomposition.trend
-    df2['resid'] = decomposition.resid
-    return df2
 
 
 def _groupby_date(df):

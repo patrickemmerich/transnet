@@ -1,8 +1,8 @@
-from transnet.plot import plot_data
+from transnet.main import predict
 
 
 def test():
-    plot_data()
+    predict()
 
 
 if __name__ == '__main__':
