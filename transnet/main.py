@@ -54,11 +54,11 @@ def predict():
     # TODO perhaps replace by EMOV
     trend = pd.Series(data=(df_train_decomp.loc[(train.index[-1]), 'trend']), index=prediction.index)
 
-    plot_evaluate(
-        {'blue': holdout,
-         'red': trend + seasonal + prediction,
-         'green': prediction_transnet}
-    )
+    df_evaluate = pd.DataFrame(index=holdout.index)
+    df_evaluate['original'] = holdout
+    df_evaluate['predicted'] = trend + seasonal + prediction
+    df_evaluate['predicted_transnet'] = prediction_transnet
+    plot_evaluate(df_evaluate)
 
     from sklearn.metrics import mean_absolute_error
     logger.info('MAE holdout - forecast {}'.format(mean_absolute_error(holdout, trend + seasonal + prediction)))

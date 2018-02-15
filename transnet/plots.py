@@ -37,9 +37,7 @@ def plot_pacf(timeseries):
     plt.savefig('plot_pacf.png')
 
 
-def plot_evaluate(plots):
-    plt.figure(figsize=(13, 8))
+def plot_evaluate(df):
+    df.plot(figsize=(13, 8), subplots=False)
     plt.title('Evaluation')
-    for color, plot in plots.items():
-        plt.plot(plot, color=color)
     plt.savefig('plot_evaluation.png')
