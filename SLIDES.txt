@@ -1,6 +1,0 @@
-1. Stationarity, ACF
-to 'see' if TS is stationary, plot mean, and ACF
-see Wiley p.38 (2.1.2)
-sinusoidal patter typical for
-
-2. AR an MA processes
