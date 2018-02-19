@@ -61,7 +61,30 @@ def plot_evaluate_scatter(df):
     plt.annotate("",
                  xy=(min_, min_), xycoords='data',
                  xytext=(max_, max_), textcoords='data',
-                 arrowprops=dict(arrowstyle="-", edgecolor="blue", alpha=.5, linewidth=.5, connectionstyle="arc3,rad=0."))
+                 arrowprops=dict(arrowstyle="-", edgecolor="blue", alpha=.5, linewidth=.5,
+                                 connectionstyle="arc3,rad=0."))
     plt.axis([min_, max_, min_, max_])
 
     plt.savefig('plot_evaluation_scatter.png')
+
+
+def plot_series_one_year_for_talk(df):
+    import pandas as pd
+    from transnet.get_data_from_api import actual_value_mw
+
+    df = df[[actual_value_mw]]
+
+    logger.info(df.mean())
+    df['moving avg (2 weeks)'] = pd.rolling_mean(df[actual_value_mw], window=14 * 24 * 4)
+    df2 = df.loc['2017-09-18':'2017-09-24', actual_value_mw]
+
+    df.plot(figsize=(16, 6), subplots=False)
+    df2.plot(figsize=(16, 6), subplots=False)
+    plt.title('One year')
+    plt.savefig('plot_ts_year.png')
+
+    plt.figure()
+    df = df.loc['2017-09-18':'2017-09-24', actual_value_mw]
+    df.plot(figsize=(10, 5), subplots=False)
+    plt.title('One week')
+    plt.savefig('plot_ts_week.png')
