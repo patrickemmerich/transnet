@@ -6,12 +6,13 @@ matplotlib.use('agg')
 from transnet.plots import plot_acf, plot_pacf, plot_ts, plot_evaluate
 from transnet.get_data_from_api import get_df_for_type
 from transnet.preprocess import preprocess_df, actual_value_mw, projection_mw
-import logging
 from transnet.model import get_forecast
 from transnet.stat_tests import test_stationarity
 from transnet.decompose import _seasonal_decompose
 
 from datetime import datetime, timedelta
+
+import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,7 +51,12 @@ def predict():
 
     seasonal = df_train_decomp.loc[(prediction.index - timedelta(weeks=1)), 'seasonal']
     seasonal.index = prediction.index
-    # TODO perhaps replace by EMOV
+
+    # Fit of the trend seems to worsen forecast
+    # historical_trend = df_train_decomp.loc[~df_train_decomp['trend'].isnull(), 'trend']
+    # polynom = np.poly1d(np.polyfit(x=range(len(historical_trend)), y=historical_trend.values, deg=2))
+    # trend_values = [polynom(i) for i in range(len(historical_trend), len(historical_trend) + len(prediction.index))]
+    # trend = pd.Series(data=trend_values, index=prediction.index)
     trend = pd.Series(data=(df_train_decomp.loc[(train.index[-1]), 'trend']), index=prediction.index)
 
     df_evaluate = pd.DataFrame(index=holdout.index)
