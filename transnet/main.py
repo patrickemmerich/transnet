@@ -9,6 +9,7 @@ from transnet.preprocess import preprocess_df, actual_value_mw, projection_mw
 from transnet.model import get_forecast
 from transnet.stat_tests import test_stationarity
 from transnet.decompose import _seasonal_decompose
+from transnet.preprocess import _add_holidays
 
 from datetime import datetime, timedelta
 
@@ -22,10 +23,38 @@ logger = logging.getLogger(__name__)
 # https://research.fb.com/prophet-forecasting-at-scale/
 # http://machinelearningstories.blogspot.de/2017/05/facebooks-phophet-model-for-forecasting.html
 
-def predict():
-    date_from = datetime(2017, 7, 1, 0, 0, 0)
-    date_upto = datetime(2017, 7, 26, 23, 45, 0)
-    horizon = timedelta(hours=2 * 24)
+def evaluate(
+        eval_period_start=datetime(2017, 1, 1),
+        eval_period_length_days=365,
+        train_size=timedelta(days=30),
+        n=10):
+    index = pd.DatetimeIndex(
+        [eval_period_start + timedelta(days=i) - timedelta(minutes=15) for i in range(eval_period_length_days)])
+
+    df = pd.DataFrame({'date_upto': index.values}, index=index)
+    df = _add_holidays(df, colname='holiday')
+    df['day_after_holiday'] = df['holiday'].shift(1)
+    df = df[df['holiday'].isnull() & df['day_after_holiday'].isnull()]
+    df = df.sample(n, random_state=345645)
+    df['date_from'] = df['date_upto'] - train_size
+    df = df[['date_from', 'date_upto']]
+    row_list = []
+    for t in df.itertuples():
+        date_from, date_upto = t[1], t[2]
+        mae_prediction, mae_seasonal, mae_transnet = predict(date_from=date_from, date_upto=date_upto, plot=False)
+        row_list.append((date_from, date_upto, mae_prediction, mae_seasonal, mae_transnet))
+
+    df_eval = pd.DataFrame(row_list, columns=['date_from', 'date_upto', 'mae_pred', 'mae_seasonal', 'mae_transnet'])
+    logger.info('EVALUATION:')
+    logger.info(df_eval)
+    logger.info(df_eval.mean())
+
+
+def predict(
+        date_from=datetime(2017, 7, 1, 0, 0, 0),
+        date_upto=datetime(2017, 7, 26, 23, 45, 0),
+        horizon=timedelta(hours=2 * 24),
+        plot=True):
     horizon_quantiles = int(horizon / timedelta(minutes=15))
 
     df = get_df_for_type()
@@ -37,14 +66,16 @@ def predict():
 
     df_train_decomp = _seasonal_decompose(train, freq=7 * 24 * 4)
 
-    plot_ts(df_train_decomp)
+    if plot:
+        plot_ts(df_train_decomp)
 
     # define (residuals) timeseries, which we will forecast
     timeseries = df_train_decomp.loc[~df_train_decomp['residuals'].isnull(), 'residuals']
 
-    plot_acf(timeseries)
-    plot_pacf(timeseries)
-    test_stationarity(timeseries)
+    if plot:
+        plot_acf(timeseries)
+        plot_pacf(timeseries)
+        test_stationarity(timeseries)
 
     # predict
     prediction = get_forecast(timeseries, p=2, d=0, q=0, horizon=horizon_quantiles)
@@ -66,6 +97,11 @@ def predict():
     plot_evaluate(df_evaluate)
 
     from sklearn.metrics import mean_absolute_error
-    logger.info('MAE holdout - forecast {}'.format(mean_absolute_error(holdout, trend + seasonal + prediction)))
-    logger.info('MAE holdout - seasonal {}'.format(mean_absolute_error(holdout, trend + seasonal)))
-    logger.info('MAE holdout - forecast transnet {}'.format(mean_absolute_error(holdout, prediction_transnet)))
+    mae_prediction = mean_absolute_error(holdout, trend + seasonal + prediction)
+    logger.info('MAE holdout - forecast {}'.format(mae_prediction))
+    mae_seasonal = mean_absolute_error(holdout, trend + seasonal)
+    logger.info('MAE holdout - seasonal {}'.format(mae_seasonal))
+    mae_transnet = mean_absolute_error(holdout, prediction_transnet)
+    logger.info('MAE holdout - forecast transnet {}'.format(mae_transnet))
+
+    return (mae_prediction, mae_seasonal, mae_transnet)

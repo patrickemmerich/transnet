@@ -17,6 +17,7 @@ setup(
             'ts_get_load_data = transnet.get_data_from_api:save_csv',
             'ts_get_feiertage = transnet.get_feiertage_from_api:save_csv',
             'ts_predict = transnet.main:predict',
+            'ts_evaluate = transnet.main:evaluate',
         ]
     },
 
