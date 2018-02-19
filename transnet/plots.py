@@ -40,7 +40,20 @@ def plot_pacf(timeseries):
     plt.savefig('plot_pacf.png')
 
 
-def plot_evaluate(df):
+def plot_evaluate_ts(df):
     df.plot(figsize=(13, 8), subplots=False)
     plt.title('Evaluation')
-    plt.savefig('plot_evaluation.png')
+    plt.savefig('plot_evaluation_ts.png')
+
+
+def plot_evaluate_scatter(df):
+    plt.figure(figsize=(6, 6))
+    x = df['mae_pred_transnet'].values
+    y = df['mae_pred'].values
+    plt.xlabel('mae_prediction_transnet')
+    plt.ylabel('mae_prediction')
+    plt.scatter(x, y)
+    min_ = min(np.min(x), np.min(y)) - 10
+    max_ = max(np.max(x), np.max(y)) + 10
+    plt.axis([min_, max_, min_, max_])
+    plt.savefig('plot_evaluation_scatter.png')

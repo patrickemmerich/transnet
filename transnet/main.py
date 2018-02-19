@@ -3,7 +3,7 @@ import pandas as pd
 
 matplotlib.use('agg')
 
-from transnet.plots import plot_acf, plot_pacf, plot_ts, plot_evaluate
+from transnet.plots import plot_acf, plot_pacf, plot_ts, plot_evaluate_ts, plot_evaluate_scatter
 from transnet.get_data_from_api import get_df_for_type
 from transnet.preprocess import preprocess_df, actual_value_mw, projection_mw
 from transnet.model import get_forecast
@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 def evaluate(
         eval_period_start=datetime(2017, 1, 1),
         eval_period_length_days=365,
-        train_size=timedelta(days=30),
-        n=10):
+        train_size=timedelta(days=2 * 30),
+        n=100):
     index = pd.DatetimeIndex(
         [eval_period_start + timedelta(days=i) - timedelta(minutes=15) for i in range(eval_period_length_days)])
 
@@ -44,10 +44,13 @@ def evaluate(
         mae_prediction, mae_seasonal, mae_transnet = predict(date_from=date_from, date_upto=date_upto, plot=False)
         row_list.append((date_from, date_upto, mae_prediction, mae_seasonal, mae_transnet))
 
-    df_eval = pd.DataFrame(row_list, columns=['date_from', 'date_upto', 'mae_pred', 'mae_seasonal', 'mae_transnet'])
+    df_eval = pd.DataFrame(row_list,
+                           columns=['date_from', 'date_upto', 'mae_pred', 'mae_seasonal', 'mae_pred_transnet'])
+
     logger.info('EVALUATION:')
     logger.info(df_eval)
     logger.info(df_eval.mean())
+    plot_evaluate_scatter(df_eval)
 
 
 def predict(
@@ -94,7 +97,8 @@ def predict(
     df_evaluate['original'] = holdout
     df_evaluate['predicted'] = trend + seasonal + prediction
     df_evaluate['predicted_transnet'] = prediction_transnet
-    plot_evaluate(df_evaluate)
+    if plot:
+        plot_evaluate_ts(df_evaluate)
 
     from sklearn.metrics import mean_absolute_error
     mae_prediction = mean_absolute_error(holdout, trend + seasonal + prediction)

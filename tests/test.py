@@ -1,8 +1,8 @@
-from transnet.main import predict
+from transnet.main import evaluate
 
 
 def test():
-    predict()
+    evaluate()
 
 
 if __name__ == '__main__':
