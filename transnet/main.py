@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 # http://machinelearningstories.blogspot.de/2017/05/facebooks-phophet-model-for-forecasting.html
 
 def evaluate(
-        eval_period_start=datetime(2017, 1, 1),
-        eval_period_length_days=365,
+        eval_period_start=datetime(2016, 1, 1),
+        eval_period_length_days=2 * 365,
         train_size=timedelta(days=2 * 30),
         n=100):
     index = pd.DatetimeIndex(
@@ -35,7 +35,7 @@ def evaluate(
     df = _add_holidays(df, colname='holiday')
     df['day_after_holiday'] = df['holiday'].shift(1)
     df = df[df['holiday'].isnull() & df['day_after_holiday'].isnull()]
-    df = df.sample(n, random_state=345645)
+    df = df.sample(n, random_state=345644)
     df['date_from'] = df['date_upto'] - train_size
     df = df[['date_from', 'date_upto']]
     row_list = []
