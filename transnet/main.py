@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 # http://machinelearningstories.blogspot.de/2017/05/facebooks-phophet-model-for-forecasting.html
 
 def evaluate(
-        eval_period_start=datetime(2016, 1, 1),
-        eval_period_length_days=2 * 365,
+        eval_period_start=datetime(2013, 1, 1),
+        eval_period_length_days=5 * 365,
         train_size=timedelta(days=2 * 30),
         n=100):
     index = pd.DatetimeIndex(
